@@ -1,10 +1,12 @@
 """
-Salaahkar - Phase 1 Streamlit Chat Interface
-Modern chat UI with sidebar controls, citation expander, and persistent history.
+Salaahkar - Phase 2 Streamlit Chat Interface
+Modern chat UI with sidebar controls, YouTube ingestion, citation expander,
+and persistent history.
 """
 
 import streamlit as st
 from agent import setup_salaahkar_agent
+from ingest import ingest_youtube_video
 
 
 # ── Page Config ──────────────────────────────────────────────────────────────
@@ -105,9 +107,34 @@ with st.sidebar:
     )
 
     st.markdown("---")
+
+    # ── YouTube Lecture Ingestion ─────────────────────────────────────────
+    with st.expander("▶️ Add YouTube Lecture", expanded=False):
+        yt_url = st.text_input(
+            "YouTube URL",
+            placeholder="https://www.youtube.com/watch?v=...",
+            label_visibility="collapsed",
+        )
+        if st.button("🎬 Process Video", use_container_width=True):
+            if yt_url:
+                with st.spinner("Fetching transcript & embedding ..."):
+                    try:
+                        n_chunks = ingest_youtube_video(yt_url)
+                        st.success(
+                            f"✅ Ingested {n_chunks} chunks! "
+                            "You can now ask questions about this video."
+                        )
+                        # Force the agent chain to rebuild with the new data
+                        st.session_state.pop("chain", None)
+                    except Exception as e:
+                        st.error(f"❌ Failed to process video: {e}")
+            else:
+                st.warning("Please paste a YouTube URL above.")
+
+    st.markdown("---")
     st.markdown(
         "<p style='color:#9ca3af; font-size:0.8rem; text-align:center;'>"
-        "Powered by Llama 3.2 · nomic-embed-text<br>Phase 1 — Hybrid RAG</p>",
+        "Powered by Llama 3.2 · nomic-embed-text<br>Phase 2 — Multi-Modal RAG</p>",
         unsafe_allow_html=True,
     )
 
